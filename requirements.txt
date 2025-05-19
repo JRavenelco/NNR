@@ -1,0 +1,7 @@
+torch
+torchvision
+opencv-python
+numpy
+matplotlib
+# tqdm # for progress bars during training, optional but nice
+tensorboard

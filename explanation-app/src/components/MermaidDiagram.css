@@ -1,0 +1,17 @@
+.mermaid-diagram-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow-x: auto; /* Para diagramas anchos */
+}
+
+/* Estilos específicos que podrías querer para el SVG generado por Mermaid */
+.mermaid-diagram-container svg {
+  max-width: 100%;
+  height: auto; /* Mantener la proporción */
+}

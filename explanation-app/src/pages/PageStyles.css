@@ -1,0 +1,36 @@
+.page-content {
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.page-content h2 {
+  color: #282c34;
+  border-bottom: 2px solid #61dafb;
+  padding-bottom: 10px;
+  margin-top: 0;
+}
+
+.page-content h3 {
+  color: #333;
+  margin-top: 25px;
+}
+
+.page-content p, .page-content li {
+  line-height: 1.6;
+  color: #333;
+}
+
+.page-content ul {
+  padding-left: 20px;
+}
+
+.page-content code {
+  background-color: #f4f4f4;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  color: #d63384; /* Bootstrap pink for code */
+}
