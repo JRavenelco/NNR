@@ -86,13 +86,13 @@ def predict_from_camera():
             probabilities = torch.softmax(output, dim=1)[0]
             confidence, predicted_idx = torch.max(probabilities, 0)
             
-            predicted_class = class_names[predicted_idx.item()]
+            predicted_class_name = class_names[predicted_idx.item()]
             confidence_score = confidence.item()
 
             # Mostrar la predicción en el frame
-            label_text = f"{predicted_class} ({confidence_score*100:.1f}%)"
-            cv2.putText(frame, label_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 
-                        1, (0, 255, 0), 2, cv2.LINE_AA)
+            label_text = f"{predicted_class_name} ({confidence_score*100:.1f}%)"
+            cv2.putText(frame, predicted_class_name, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+            cv2.putText(frame, f"Confianza: {confidence_score*100:.1f}%", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
             
             # Mostrar el frame resultante
             cv2.imshow('Reconocimiento de Objetos CIFAR-100', frame)

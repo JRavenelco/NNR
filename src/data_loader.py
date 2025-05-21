@@ -2,8 +2,23 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 
-# TODO: Definir las clases de CIFAR-100 (fine labels)
-CIFAR100_CLASSES = [] # Se llenará más adelante
+# --- Lista de Clases CIFAR-100 (Fine Labels) ---
+CIFAR100_CLASSES = [
+    'apple', 'aquarium_fish', 'baby', 'bear', 'beaver', 'bed', 'bee', 'beetle',
+    'bicycle', 'bottle', 'bowl', 'boy', 'bridge', 'bus', 'butterfly', 'camel',
+    'can', 'castle', 'caterpillar', 'cattle', 'chair', 'chimpanzee', 'clock',
+    'cloud', 'cockroach', 'couch', 'crab', 'crocodile', 'cup', 'dinosaur',
+    'dolphin', 'elephant', 'flatfish', 'forest', 'fox', 'girl', 'hamster',
+    'house', 'kangaroo', 'keyboard', 'lamp', 'lawn_mower', 'leopard', 'lion',
+    'lizard', 'lobster', 'man', 'maple_tree', 'motorcycle', 'mountain', 'mouse',
+    'mushroom', 'oak_tree', 'orange', 'orchid', 'otter', 'palm_tree', 'pear',
+    'pickup_truck', 'pine_tree', 'plain', 'plate', 'poppy', 'porcupine',
+    'possum', 'rabbit', 'raccoon', 'ray', 'road', 'rocket', 'rose', 'sea',
+    'seal', 'shark', 'shrew', 'skunk', 'skyscraper', 'snail', 'snake', 'spider',
+    'squirrel', 'streetcar', 'sunflower', 'sweet_pepper', 'table', 'tank',
+    'telephone', 'television', 'tiger', 'tractor', 'train', 'trout', 'tulip',
+    'turtle', 'wardrobe', 'whale', 'willow_tree', 'wolf', 'woman', 'worm'
+]
 
 def get_cifar100_loaders(batch_size=64, data_dir='./data'):
     """Carga y preprocesa el dataset CIFAR-100."""
@@ -36,35 +51,6 @@ def get_cifar100_loaders(batch_size=64, data_dir='./data'):
         root=data_dir, train=False, download=True, transform=transform_test)
     testloader = torch.utils.data.DataLoader(
         testset, batch_size=batch_size, shuffle=False, num_workers=2)
-    
-    # Obtener las clases (fine labels)
-    # Esto se hace después de la descarga para asegurar que 'classes' esté disponible
-    # Nota: CIFAR100 en torchvision no expone directamente 'classes' como CIFAR10.
-    # Necesitaremos una lista manual o extraerla si es posible.
-    # Por ahora, usaremos una lista placeholder que actualizaremos.
-    global CIFAR100_CLASSES
-    if not CIFAR100_CLASSES:
-        # Esta es una lista parcial, para tener algo. Deberíamos completarla.
-        # La forma correcta es cargar los metadatos del dataset.
-        # El archivo meta de CIFAR-100 Python version contiene 'fine_label_names'
-        # Podríamos leerlo si es necesario, o usar una lista predefinida.
-        print("Advertencia: La lista de clases de CIFAR-100 no está completamente definida en data_loader.py.")
-        CIFAR100_CLASSES = [
-            'apple', 'aquarium_fish', 'baby', 'bear', 'beaver', 'bed', 'bee', 'beetle', 
-            'bicycle', 'bottle', 'bowl', 'boy', 'bridge', 'bus', 'butterfly', 'camel', 
-            'can', 'castle', 'caterpillar', 'cattle', 'chair', 'chimpanzee', 'clock', 
-            'cloud', 'cockroach', 'couch', 'crab', 'crocodile', 'cup', 'dinosaur', 
-            'dolphin', 'elephant', 'flatfish', 'forest', 'fox', 'girl', 'hamster', 
-            'house', 'kangaroo', 'keyboard', 'lamp', 'lawn_mower', 'leopard', 'lion',
-            'lizard', 'lobster', 'man', 'maple_tree', 'motorcycle', 'mountain', 'mouse', 
-            'mushroom', 'oak_tree', 'orange', 'orchid', 'otter', 'palm_tree', 'pear', 
-            'pickup_truck', 'pine_tree', 'plain', 'plate', 'poppy', 'porcupine', 
-            'possum', 'rabbit', 'raccoon', 'ray', 'road', 'rocket', 'rose', 'sea', 
-            'seal', 'shark', 'shrew', 'skunk', 'skyscraper', 'snail', 'snake', 'spider', 
-            'squirrel', 'streetcar', 'sunflower', 'sweet_pepper', 'table', 'tank', 
-            'telephone', 'television', 'tiger', 'tractor', 'train', 'trout', 'tulip', 
-            'turtle', 'wardrobe', 'whale', 'willow_tree', 'wolf', 'woman', 'worm'
-        ]
     
     print(f"Número de clases CIFAR-100 (fine): {len(CIFAR100_CLASSES)}")
     print("Cargadores de datos listos.")
