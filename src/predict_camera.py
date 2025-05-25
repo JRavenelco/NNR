@@ -2,6 +2,7 @@ import cv2
 import torch
 import torchvision.transforms as transforms
 import numpy as np
+from picamera2 import Picamera2
 
 from model import SimpleCNN # Asegúrate de que model.py esté en el mismo directorio o en PYTHONPATH
 from data_loader import CIFAR100_CLASSES # Para obtener los nombres de las clases
@@ -22,6 +23,7 @@ transform_cam = transforms.Compose([
 
 def predict_from_camera():
     print("Iniciando predicción desde la cámara...")
+    picam2 = None # Definir picam2 aquí para que esté en el scope del finally
 
     # Configurar dispositivo
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -54,27 +56,33 @@ def predict_from_camera():
     
     print(f"{len(class_names)} nombres de clases cargados.")
 
-    # Iniciar captura de video
-    cap = cv2.VideoCapture(0) # 0 es usualmente la cámara web por defecto
-
-    if not cap.isOpened():
-        print("Error: No se pudo abrir la cámara.")
+    # Iniciar captura de video con Picamera2
+    try:
+        picam2 = Picamera2()
+        # Configurar la cámara. Queremos un array RGB.
+        # El modelo espera 32x32, pero la transformación ya se encarga de eso.
+        # Capturamos a una resolución mayor para mejor calidad antes del reescalado.
+        config = picam2.create_preview_configuration(main={"format": "RGB888", "size": (640, 480)})
+        picam2.configure(config)
+        picam2.start()
+        print("Cámara Picamera2 iniciada. Presiona 'q' para salir.")
+    except Exception as e:
+        print(f"Error al iniciar Picamera2: {e}")
+        if picam2 and hasattr(picam2, 'started') and picam2.started:
+             picam2.stop()
         return
-
-    print("Cámara abierta. Presiona 'q' para salir.")
 
     try:
         while True:
             # Capturar frame por frame
-            ret, frame = cap.read()
-            if not ret:
-                print("Error: No se pudo leer el frame de la cámara.")
+            frame_rgb = picam2.capture_array() # Esto ya es un array NumPy RGB
+            if frame_rgb is None:
+                print("Error: No se pudo leer el frame de la cámara Picamera2.")
                 break
 
             # Preprocesar el frame
-            # OpenCV lee en BGR, PyTorch espera RGB. Convertir si es necesario.
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            input_tensor = transform_cam(rgb_frame)
+            # 'frame_rgb' ya está en RGB. La transformación espera PIL.
+            input_tensor = transform_cam(frame_rgb)
             input_batch = input_tensor.unsqueeze(0) # Crear un mini-lote de tamaño 1
             input_batch = input_batch.to(device)
 
@@ -90,21 +98,29 @@ def predict_from_camera():
             confidence_score = confidence.item()
 
             # Mostrar la predicción en el frame
+            # cv2.putText opera sobre el array (frame_rgb). Los colores son (B,G,R) para cv2.putText
+            # pero como nuestro frame es RGB, (0,255,0) será verde.
             label_text = f"{predicted_class} ({confidence_score*100:.1f}%)"
-            cv2.putText(frame, label_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 
-                        1, (0, 255, 0), 2, cv2.LINE_AA)
+            # Es buena práctica trabajar sobre una copia para visualización.
+            output_display_frame_rgb = frame_rgb.copy()
+            cv2.putText(output_display_frame_rgb, label_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 
+                        1, (0, 255, 0), 2, cv2.LINE_AA) # Verde en RGB
+            
+            # Convertir frame (RGB con texto) a BGR para cv2.imshow
+            output_display_frame_bgr = cv2.cvtColor(output_display_frame_rgb, cv2.COLOR_RGB2BGR)
             
             # Mostrar el frame resultante
-            cv2.imshow('Reconocimiento de Objetos CIFAR-100', frame)
+            cv2.imshow('Reconocimiento de Objetos CIFAR-100', output_display_frame_bgr)
 
             # Salir si se presiona 'q'
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
     finally:
-        # Liberar la captura y cerrar ventanas
-        cap.release()
+        if picam2 and hasattr(picam2, 'started') and picam2.started:
+            picam2.stop()
+            print("Cámara Picamera2 detenida.")
         cv2.destroyAllWindows()
-        print("Cámara cerrada y recursos liberados.")
+        print("Ventanas de OpenCV cerradas.")
 
 if __name__ == '__main__':
     predict_from_camera()
