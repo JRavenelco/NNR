@@ -1,7 +1,10 @@
-torch
-torchvision
-opencv-python
-numpy
-matplotlib
-# tqdm # for progress bars during training, optional but nice
-tensorboard
+torch>=1.10.0
+torchvision>=0.11.0
+timm>=0.4.12
+opencv-python>=4.5.5
+numpy>=1.21.0
+matplotlib>=3.4.0
+tensorboard>=2.6.0
+scikit-learn
+Pillow
+tqdm
