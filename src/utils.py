@@ -7,14 +7,49 @@ def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Guardando checkpoint")
     torch.save(state, filename)
 
-def load_checkpoint(checkpoint, model, optimizer=None):
-    """Carga el estado del modelo y opcionalmente del optimizador."""
-    print("=> Cargando checkpoint")
-    model.load_state_dict(checkpoint['state_dict'])
-    if optimizer and 'optimizer' in checkpoint:
+def load_checkpoint(checkpoint_path, model, optimizer=None, scheduler=None, scaler=None, device='cpu'):
+    """Carga el estado del modelo, optimizador, scheduler y scaler desde un checkpoint."""
+    print(f"=> Cargando checkpoint desde '{checkpoint_path}'")
+    try:
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+    except FileNotFoundError:
+        print(f"Checkpoint no encontrado en {checkpoint_path}. No se carga nada.")
+        return 0 # Devuelve epoch 0 si no se encuentra el checkpoint
+
+    if 'model_state_dict' in checkpoint:
+        model.load_state_dict(checkpoint['model_state_dict'])
+    elif 'state_dict' in checkpoint: # Compatibilidad con formato antiguo
+        model.load_state_dict(checkpoint['state_dict'])
+    else:
+        print("Advertencia: No se encontró 'model_state_dict' o 'state_dict' en el checkpoint.")
+
+    if optimizer and 'optimizer_state_dict' in checkpoint:
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    elif optimizer and 'optimizer' in checkpoint: # Compatibilidad con formato antiguo
         optimizer.load_state_dict(checkpoint['optimizer'])
-    # También se podría devolver la época, etc.
-    # return checkpoint.get('epoch', 0), checkpoint.get('best_accuracy', 0.0)
+    elif optimizer:
+        print("Advertencia: No se encontró 'optimizer_state_dict' o 'optimizer' en el checkpoint para el optimizador.")
+
+    if scheduler and 'scheduler_state_dict' in checkpoint:
+        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+    elif scheduler:
+        print("Advertencia: No se encontró 'scheduler_state_dict' en el checkpoint para el scheduler.")
+
+    if scaler and 'scaler_state_dict' in checkpoint:
+        scaler.load_state_dict(checkpoint['scaler_state_dict'])
+    elif scaler:
+        print("Advertencia: No se encontró 'scaler_state_dict' en el checkpoint para el scaler.")
+
+    start_epoch = checkpoint.get('epoch', 0)
+    best_val_loss = checkpoint.get('val_loss', float('inf'))
+    best_val_acc = checkpoint.get('val_acc', 0.0)
+    best_val_auroc = checkpoint.get('val_auroc', 0.0)
+    
+    print(f"Checkpoint cargado. Resumiendo desde la época {start_epoch}.")
+    print(f"Valores del checkpoint: Val Loss: {best_val_loss:.4f}, Val Acc: {best_val_acc:.2f}%, Val AUROC: {best_val_auroc:.4f}")
+
+    # Devolver la época de inicio y las métricas relevantes para que el script de entrenamiento pueda usarlas
+    return start_epoch, best_val_loss, best_val_acc, best_val_auroc
 
 def plot_metrics(train_losses, val_losses, train_accuracies, val_accuracies, num_epochs):
     """Grafica las métricas de entrenamiento y validación."""

@@ -62,74 +62,89 @@ class RandomErasing(object):
             return F.erase(img, 0, 0, img.size(1), img.size(2), self.value, self.inplace)
         return img
 
-# --- Lista de Clases CIFAR-100 (Fine Labels) ---
+# --- Lista de Clases CIFAR-100 (Fine Labels, Español) ---
 CIFAR100_CLASSES = [
-    'apple', 'aquarium_fish', 'baby', 'bear', 'beaver', 'bed', 'bee', 'beetle',
-    'bicycle', 'bottle', 'bowl', 'boy', 'bridge', 'bus', 'butterfly', 'camel',
-    'can', 'castle', 'caterpillar', 'cattle', 'chair', 'chimpanzee', 'clock',
-    'cloud', 'cockroach', 'couch', 'crab', 'crocodile', 'cup', 'dinosaur',
-    'dolphin', 'elephant', 'flatfish', 'forest', 'fox', 'girl', 'hamster',
-    'house', 'kangaroo', 'keyboard', 'lamp', 'lawn_mower', 'leopard', 'lion',
-    'lizard', 'lobster', 'man', 'maple_tree', 'motorcycle', 'mountain', 'mouse',
-    'mushroom', 'oak_tree', 'orange', 'orchid', 'otter', 'palm_tree', 'pear',
-    'pickup_truck', 'pine_tree', 'plain', 'plate', 'poppy', 'porcupine',
-    'possum', 'rabbit', 'raccoon', 'ray', 'road', 'rocket', 'rose', 'sea',
-    'seal', 'shark', 'shrew', 'skunk', 'skyscraper', 'snail', 'snake', 'spider',
-    'squirrel', 'streetcar', 'sunflower', 'sweet_pepper', 'table', 'tank',
-    'telephone', 'television', 'tiger', 'tractor', 'train', 'trout', 'tulip',
-    'turtle', 'wardrobe', 'whale', 'willow_tree', 'wolf', 'woman', 'worm'
+    'manzana', 'pez de acuario', 'bebé', 'oso', 'castor', 'cama', 'abeja', 'escarabajo',
+    'bicicleta', 'botella', 'tazón', 'niño', 'puente', 'autobús', 'mariposa', 'camello',
+    'lata', 'castillo', 'oruga', 'ganado', 'silla', 'chimpancé', 'reloj',
+    'nube', 'cucaracha', 'sofá', 'cangrejo', 'cocodrilo', 'taza', 'dinosaurio',
+    'delfín', 'elefante', 'pez plano', 'bosque', 'zorro', 'niña', 'hámster',
+    'casa', 'canguro', 'teclado', 'lámpara', 'cortacésped', 'leopardo', 'león',
+    'lagarto', 'langosta', 'hombre', 'arce', 'motocicleta', 'montaña', 'ratón',
+    'hongo', 'roble', 'naranja', 'orquídea', 'nutria', 'palma', 'pera',
+    'camioneta', 'pino', 'llanura', 'plato', 'amapola', 'puercoespín',
+    'zarigüeya', 'conejo', 'mapache', 'raya', 'carretera', 'cohete', 'rosa', 'mar',
+    'foca', 'tiburón', 'musaraña', 'zorrillo', 'rascacielos', 'caracol', 'serpiente', 'araña',
+    'ardilla', 'tranvía', 'girasol', 'pimiento', 'mesa', 'tanque',
+    'teléfono', 'televisión', 'tigre', 'tractor', 'tren', 'trucha', 'tulipán',
+    'tortuga', 'armario', 'ballena', 'sauce', 'lobo', 'mujer', 'gusano'
 ]
 
-def get_cifar100_loaders(batch_size=64, data_dir='./data', use_mixup=False, use_cutmix=False, cutmix_alpha=1.0, cutmix_prob=0.5):
+def get_cifar100_loaders(batch_size=64, num_workers=2, data_dir='./data', img_size=32):
     """Carga y preprocesa el dataset CIFAR-100 con aumentos de datos mejorados.
     
     Args:
-        batch_size: Tamaño del lote
-        data_dir: Directorio donde se almacenan/descargan los datos
-        use_mixup: Si es True, aplica MixUp a los datos de entrenamiento
-        use_cutmix: Si es True, aplica CutMix a los datos de entrenamiento
-        cutmix_alpha: Parámetro alpha para la distribución Beta en CutMix
-        cutmix_prob: Probabilidad de aplicar CutMix a un lote
+        batch_size: Tamaño del lote.
+        num_workers: Número de workers para DataLoader.
+        data_dir: Directorio donde se almacenan/descargan los datos.
+        img_size: Tamaño de la imagen (e.g., 32 para CIFAR-100).
         
     Returns:
-        train_loader, test_loader, num_classes, train_dataset, test_dataset
+        train_loader: DataLoader para el conjunto de entrenamiento con aumentos.
+        val_loader: DataLoader para el conjunto de validación (test set de CIFAR-100).
+        test_loader: DataLoader para el conjunto de prueba (mismo que val_loader en este caso).
     """
-    print("Preparando los cargadores de datos de CIFAR-100 con aumentos mejorados...")
+    print("Preparando los cargadores de datos de CIFAR-100...")
     print(f"Directorio de datos: {os.path.abspath(data_dir)}")
-    print(f"Tamaño de lote: {batch_size}")
-    print(f"Usar MixUp: {use_mixup}")
-    print(f"Usar CutMix: {use_cutmix} (alpha: {cutmix_alpha}, prob: {cutmix_prob})")
+    print(f"Tamaño de lote: {batch_size}, Workers: {num_workers}, Tamaño de imagen: {img_size}")
 
-    # Media y desviación estándar para CIFAR-100
+    # CIFAR-100 specific stats
     CIFAR100_MEAN = (0.5071, 0.4867, 0.4408)
     CIFAR100_STD = (0.2675, 0.2565, 0.2761)
     
-    # Transformaciones de aumento de datos mejoradas
-    transform_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4, padding_mode='reflect'),
+    # Transformaciones para el conjunto de entrenamiento con aumentos avanzados
+    train_transform = transforms.Compose([
+        # Aumentos geométricos
+        transforms.RandomResizedCrop(img_size, scale=(0.8, 1.0), ratio=(0.9, 1.1)),
         transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.2),
         transforms.RandomRotation(15),
-        transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
-        transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)),
+        transforms.RandomAffine(0, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=5),
+        transforms.RandomPerspective(distortion_scale=0.2, p=0.3),
+        
+        # Aumentos de color
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
         transforms.RandomGrayscale(p=0.1),
-        transforms.RandomApply([transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0))], p=0.5),
+        transforms.RandomInvert(p=0.1),
+        transforms.RandomPosterize(bits=4, p=0.2),
+        transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.3),
+        transforms.RandomAutocontrast(p=0.3),
+        
+        # Aumentos avanzados
+        transforms.RandomErasing(p=0.2, scale=(0.02, 0.2), ratio=(0.3, 3.3), value='random'),
+        transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+        
+        # Normalización y conversión final
         transforms.ToTensor(),
-        transforms.Normalize(CIFAR100_MEAN, CIFAR100_STD),
-        Cutout(n_holes=1, length=16),
-        RandomErasing(p=0.2, scale=(0.02, 0.2), ratio=(0.3, 3.3), value=0, inplace=False)
+        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], std=[0.2675, 0.2565, 0.2761]),
+        
+        # Cutout para regularización adicional
+        Cutout(n_holes=2, length=16),
     ])
 
-    # Transformaciones para validación (sin aumentos)
-    transform_test = transforms.Compose([
+    # Transformaciones para validación/prueba (sin aumentos, solo normalización y ToTensor)
+    transform_val_test = transforms.Compose([
+        transforms.Resize(img_size),
+        transforms.CenterCrop(img_size),
         transforms.ToTensor(),
         transforms.Normalize(CIFAR100_MEAN, CIFAR100_STD)
     ])
 
     # Descargar y cargar el conjunto de entrenamiento
-    print("\nDescargando datos de entrenamiento...")
+    print("\nCargando datos de entrenamiento CIFAR-100...")
     try:
         train_dataset = torchvision.datasets.CIFAR100(
-            root=data_dir, train=True, download=True, transform=transform_train
+            root=data_dir, train=True, download=True, transform=train_transform
         )
         print(f"Datos de entrenamiento cargados. Tamaño: {len(train_dataset)} muestras")
     except Exception as e:
@@ -137,60 +152,149 @@ def get_cifar100_loaders(batch_size=64, data_dir='./data', use_mixup=False, use_
         raise
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True, drop_last=True)
 
-    # Descargar y cargar el conjunto de prueba
-    print("\nDescargando datos de prueba...")
+    # Descargar y cargar el conjunto de prueba (usado como validación y prueba)
+    print("\nCargando datos de validación/prueba (test set de CIFAR-100)...")
     try:
         test_dataset = torchvision.datasets.CIFAR100(
-            root=data_dir, train=False, download=True, transform=transform_test
+            root=data_dir, train=False, download=True, transform=transform_val_test
         )
-        print(f"Datos de prueba cargados. Tamaño: {len(test_dataset)} muestras")
+        print(f"Datos de validación/prueba cargados. Tamaño: {len(test_dataset)} muestras")
     except Exception as e:
-        print(f"Error al cargar datos de prueba: {str(e)}")
+        print(f"Error al cargar datos de validación/prueba: {str(e)}")
         raise
 
+    # Usamos el mismo conjunto para validación y prueba
+    val_loader = torch.utils.data.DataLoader(
+        test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
+    
     test_loader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+        test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
     
     print(f"Número de clases CIFAR-100 (fine): {len(CIFAR100_CLASSES)}")
-    print("Cargadores de datos listos.")
-    return train_loader, test_loader, CIFAR100_CLASSES
+    print("Cargadores de datos CIFAR-100 listos.")
+    
+    return train_loader, val_loader, test_loader
+
+def get_ood_loaders(ood_dataset_name, batch_size, num_workers, data_dir, img_size):
+    """Carga y preprocesa un dataset OOD especificado.
+
+    Args:
+        ood_dataset_name (str): Nombre del dataset OOD ('svhn', 'cifar10', 'texture', 'places365_small').
+        batch_size (int): Tamaño del lote.
+        num_workers (int): Número de workers para DataLoader.
+        data_dir (str): Directorio base para los datos.
+        img_size (int): Tamaño al que se redimensionarán las imágenes OOD.
+
+    Returns:
+        torch.utils.data.DataLoader: DataLoader para el dataset OOD, o None si no se especifica/encuentra.
+    """
+    if not ood_dataset_name:
+        return None
+
+    print(f"\nPreparando cargador de datos OOD: {ood_dataset_name}...")
+    ood_data_path = os.path.join(data_dir, ood_dataset_name.lower())
+    os.makedirs(ood_data_path, exist_ok=True)
+
+    # Usar la misma normalización que CIFAR-100 para consistencia, aunque podría no ser óptima para todos los OOD.
+    # Idealmente, se usaría la normalización con la que el modelo fue pre-entrenado si es de ImageNet.
+    # Para este caso, asumimos que el modelo se entrena en CIFAR-100 y evaluamos OOD con la misma escala.
+    mean = [0.5071, 0.4867, 0.4408]
+    std = [0.2675, 0.2565, 0.2761]
+
+    ood_transform = transforms.Compose([
+        transforms.Resize((img_size + 4, img_size + 4)),
+        transforms.CenterCrop(img_size),
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)
+    ])
+
+    ood_dataset = None
+    try:
+        if ood_dataset_name.lower() == 'svhn':
+            ood_dataset = torchvision.datasets.SVHN(
+                root=ood_data_path, split='test', download=True, transform=ood_transform
+            )
+            print(f"SVHN (test set) cargado. Tamaño: {len(ood_dataset)} muestras.")
+        elif ood_dataset_name.lower() == 'cifar10':
+            # Usar el test set de CIFAR-10 como OOD
+            ood_dataset = torchvision.datasets.CIFAR10(
+                root=ood_data_path, train=False, download=True, transform=ood_transform
+            )
+            print(f"CIFAR-10 (test set) cargado como OOD. Tamaño: {len(ood_dataset)} muestras.")
+        # TODO: Añadir más datasets OOD como Texture, Places365 (requerirían descarga manual o scripts)
+        # elif ood_dataset_name.lower() == 'texture':
+        #     # DTD (Describable Textures Dataset)
+        #     # Necesitaría una clase Dataset personalizada y descarga manual.
+        #     print("Dataset de Texturas (DTD) no implementado automáticamente. Requiere descarga manual.")
+        # elif ood_dataset_name.lower() == 'places365_small':
+        #     # Places365 subset
+        #     # Necesitaría una clase Dataset personalizada y descarga manual.
+        #     print("Dataset Places365 (small) no implementado automáticamente. Requiere descarga manual.")
+        else:
+            print(f"Dataset OOD '{ood_dataset_name}' no soportado o no implementado.")
+            return None
+    except Exception as e:
+        print(f"Error al cargar el dataset OOD '{ood_dataset_name}': {str(e)}")
+        return None
+
+    if ood_dataset:
+        ood_loader = torch.utils.data.DataLoader(
+            ood_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True
+        )
+        print(f"Cargador de datos OOD para '{ood_dataset_name}' listo.")
+        return ood_loader
+    return None
 
 if __name__ == '__main__':
     # Ejemplo de uso:
-    print("Probando el cargador de datos...")
-    train_loader, test_loader, classes = get_cifar100_loaders(batch_size=4)
+    print("Probando el cargador de datos CIFAR-100...")
+    train_loader_cifar, val_loader_cifar = get_cifar100_loaders(batch_size=4, num_workers=1, data_dir='../data', img_size=32)
     
-    print(f"Número de lotes en el cargador de entrenamiento: {len(train_loader)}")
-    print(f"Número de lotes en el cargador de prueba: {len(test_loader)}")
-    print(f"Total de clases: {len(classes)}")
-    print(f"Primeras 10 clases: {classes[:10]}")
+    print(f"Número de lotes en el cargador de entrenamiento CIFAR-100: {len(train_loader_cifar)}")
+    print(f"Número de lotes en el cargador de validación CIFAR-100: {len(val_loader_cifar)}")
+    print(f"Total de clases CIFAR-100: {len(CIFAR100_CLASSES)}")
 
-    # Visualizar algunas imágenes del primer lote
+    # Probar cargador OOD
+    print("\nProbando el cargador de datos OOD (SVHN)...")
+    ood_loader_svhn = get_ood_loaders('svhn', batch_size=4, num_workers=1, data_dir='../data', img_size=32)
+    if ood_loader_svhn:
+        print(f"Número de lotes en el cargador OOD SVHN: {len(ood_loader_svhn)}")
+        ood_images, _ = next(iter(ood_loader_svhn))
+        print(f"Forma de las imágenes OOD SVHN: {ood_images.shape}")
+
+    print("\nProbando el cargador de datos OOD (CIFAR-10)...")
+    ood_loader_cifar10 = get_ood_loaders('cifar10', batch_size=4, num_workers=1, data_dir='../data', img_size=32)
+    if ood_loader_cifar10:
+        print(f"Número de lotes en el cargador OOD CIFAR-10: {len(ood_loader_cifar10)}")
+        ood_images_c10, _ = next(iter(ood_loader_cifar10))
+        print(f"Forma de las imágenes OOD CIFAR-10: {ood_images_c10.shape}")
+
+    # Visualizar algunas imágenes del primer lote de CIFAR-100
     import matplotlib.pyplot as plt
     import numpy as np
 
-    def imshow(img):
-        img = img / 2 + 0.5     # Desnormalizar (si la normalización fue (-0.5, 0.5))
-                                # Para la normalización de CIFAR-100, esto es más complejo.
-                                # La normalización usada es: mean=[0.5071, 0.4867, 0.4408], std=[0.2675, 0.2565, 0.2761]
-                                # Para desnormalizar: img * std + mean
+    def imshow(img, labels=None):
+        # Desnormalizar para visualización
         std = torch.tensor([0.2675, 0.2565, 0.2761]).view(3, 1, 1)
         mean = torch.tensor([0.5071, 0.4867, 0.4408]).view(3, 1, 1)
         img = img * std + mean
+        img = torch.clamp(img, 0, 1) # Asegurar que esté en [0,1] después de desnormalizar
         npimg = img.numpy()
         plt.imshow(np.transpose(npimg, (1, 2, 0)))
+        plt.axis('off')
+        if labels is not None:
+            plt.title(' | '.join([CIFAR100_CLASSES[int(lbl)] for lbl in labels]))
         plt.show()
 
-    # Obtener algunas imágenes de entrenamiento
-    dataiter = iter(train_loader)
+    # Obtener algunas imágenes de entrenamiento CIFAR-100
+    dataiter = iter(train_loader_cifar)
     images, labels = next(dataiter)
 
-    # Mostrar imágenes
-    #imshow(torchvision.utils.make_grid(images))
-    # Imprimir etiquetas
-    #print(' '.join(f'{classes[labels[j]]:5s}' for j in range(4)))
-    print("Ejemplo de lote cargado.")
-    print(f"Forma de las imágenes: {images.shape}") # Debería ser [batch_size, 3, 32, 32]
+    # Mostrar imágenes y etiquetas en español
+    # imshow(torchvision.utils.make_grid(images), labels=labels)
+    print("\nEjemplo de lote CIFAR-100 cargado.")
+    print(f"Forma de las imágenes: {images.shape}") # Debería ser [batch_size, 3, img_size, img_size]
     print(f"Forma de las etiquetas: {labels.shape}") # Debería ser [batch_size]
+    print('Etiquetas en español:', ', '.join([CIFAR100_CLASSES[int(lbl)] for lbl in labels]))
