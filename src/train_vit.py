@@ -234,8 +234,22 @@ def main():
     
     # Entrenamiento
     best_acc = 0.0
+    start_epoch = 0
+
+    # Cargar checkpoint si existe
+    checkpoint_path = os.path.join(config.save_dir, 'best_model.pth')
+    if os.path.exists(checkpoint_path):
+        print(f"Reanudando entrenamiento desde {checkpoint_path}")
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        start_epoch = checkpoint['epoch'] + 1
+        best_acc = checkpoint.get('val_acc', 0.0) # Usar get para compatibilidad con checkpoints antiguos
+        print(f"Checkpoint cargado. Época de inicio: {start_epoch}, Mejor Acc Val: {best_acc:.2f}%")
+    else:
+        print("No se encontró checkpoint. Iniciando entrenamiento desde cero.")
     
-    for epoch in range(config.num_epochs):
+    for epoch in range(start_epoch, config.num_epochs):
         print(f'\nEpoch: {epoch+1}/{config.num_epochs}')
         
         # Entrenar
