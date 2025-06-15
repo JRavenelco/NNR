@@ -1,0 +1,13 @@
+train: train/images
+val: valid/images
+# test: ../test/images
+
+nc: 3
+names: ['greenbox', 'redbox', 'xparking']
+
+roboflow:
+  workspace: traffic-sign-3jedo
+  project: wro-round-2
+  version: 3
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/traffic-sign-3jedo/wro-round-2/dataset/3
