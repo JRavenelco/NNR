@@ -42,3 +42,6 @@ build/
 # Runs
 runs/*
 !runs/vit/
+
+# Datasets (large folders)
+WRO Round 2.v3-red_green_xpark_320.yolov8/
