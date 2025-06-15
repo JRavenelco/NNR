@@ -8,3 +8,6 @@ tensorboard
 timm>=0.9.0
 pillow>=9.0.0
 ultralytics
+blobconverter
+onnx
+onnxruntime
