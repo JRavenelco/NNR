@@ -24,7 +24,7 @@ env/
 Thumbs.db
 
 # Data files (if large or downloaded automatically)
-# data/
+data/
 
 # Trained models (can be large)
 models_trained/
@@ -42,3 +42,21 @@ build/
 # Runs
 runs/*
 !runs/vit/
+
+# Downloaded archives
+*.zip
+
+# Data inside src
+src/data/
+
+# Temp venv in src
+src/.venv_temp/
+
+# Documents
+*.pdf
+
+# Result files
+*.csv
+
+# Runs folder inside src
+src/runs/
